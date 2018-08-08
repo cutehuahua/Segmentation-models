@@ -1,0 +1,13 @@
+num_of_stage=3
+
+name=abc
+color=rgb
+batch_size=2
+save_img_every_iterations=1
+
+stage0=/home/hua/Desktop/dataset/egohand,/home/hua/Desktop/dataset/ae_hand,3
+data_argument0=Resize=320,RandomRotate=30,GaussianBlur=10,ToTensor
+stage1=/home/hua/Desktop/dataset/egohand,/home/hua/Desktop/dataset/ae_hand,2
+data_argument1=Resize=320,RandomRotate=50,RandomBlur=1.0,ToTensor
+stage2=/home/hua/Desktop/dataset/egohand,/home/hua/Desktop/dataset/ae_hand,1
+data_argument2=Resize=320,RandomRotate=100,ToTensor

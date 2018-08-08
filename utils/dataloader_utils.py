@@ -22,15 +22,25 @@ import math
 
 2018/08/06
 
-1. add GaussianBlur, can only apply on PIL image
+1. add GaussianBlur/RandomBlur, can only apply on PIL image
 
 '''
 
 class GaussianBlur:
-    def __init__(self, radius=3):
+    def __init__(self, radius=2):
         self.radius=radius
     def __call__(self, img, mask):
         return img.filter(ImageFilter.GaussianBlur(self.radius)), mask
+
+class RandomBlur:
+    def __init__(self, p = 0.5, radius=2):
+        self.radius=radius
+        self.p = p
+    def __call__(self, img, mask):
+        if random.random() < self.p:
+            img = img.filter(ImageFilter.GaussianBlur(self.radius))
+        return img, mask
+
 
 class Compose(object):
     def __init__(self, transforms):
@@ -42,6 +52,8 @@ class Compose(object):
 
 class Resize(object):
     def __init__(self, size):
+        if type(size) != tuple:
+            size = (int(size), int(size))
         self.size = size
     def __call__(self, image, mask):
         image = TF.resize(image, size = self.size)
@@ -85,11 +97,12 @@ class RandomGrayscale(object):
 
 class RandomResizedCrop(object):
 
-    def __init__(self, size=320, scale=(0.5, 1.0), ratio=(1. / 2., 2. / 1.), interpolation=Image.BILINEAR):
+    def __init__(self, p = 0.5, size=320, scale=(0.5, 1.0), ratio=(3. / 4., 4. / 3.), interpolation=Image.BILINEAR):
         self.size = (size, size)
         self.interpolation = interpolation
         self.scale = scale
         self.ratio = ratio
+        self.p = p
 
     def get_params(self, img, scale, ratio):
         for attempt in range(10):
@@ -115,10 +128,12 @@ class RandomResizedCrop(object):
         return i, j, w, w
 
     def __call__(self, img, mask):
-        i, j, h, w = self.get_params(img, self.scale, self.ratio)
-        out_img =  TF.resized_crop(img, i, j, h, w, self.size, self.interpolation)
-        out_mask = TF.resized_crop(mask, i, j, h, w, self.size, self.interpolation)
-        return out_img, out_mask
+        if random.random() < self.p:
+            i, j, h, w = self.get_params(img, self.scale, self.ratio)
+            out_img =  TF.resized_crop(img, i, j, h, w, self.size, self.interpolation)
+            out_mask = TF.resized_crop(mask, i, j, h, w, self.size, self.interpolation)
+            return out_img, out_mask
+        return img, mask
 
 class ToGray(object):
     def __call__(self, image,mask):

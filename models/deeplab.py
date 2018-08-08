@@ -2,7 +2,7 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from utils.resnet import resnet101
+from .utils.resnet import resnet101
 
 
 class resnet_backbone(nn.Module):
@@ -48,9 +48,9 @@ class ASPP(nn.Module):
         return x
 
 #ResNet101 as backbone 
-class DeepLabv3p(nn.Module):
+class deeplabv3p(nn.Module):
     def __init__(self, input_channel=3, num_class=21, output_stride=16 ):
-        super(DeepLabv3p, self).__init__()
+        super(deeplabv3p, self).__init__()
         self.feature_extractor = resnet_backbone(num_class=num_class, input_channel=input_channel, output_stride=output_stride)
         self.output_stride = output_stride
 

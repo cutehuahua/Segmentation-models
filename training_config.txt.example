@@ -1,13 +1,15 @@
-num_of_stage=3
+num_of_stage=2
 
-name=abc
+name=deeplab_os16_s5
 color=rgb
-batch_size=2
-save_img_every_iterations=1
+batch_size=8
+save_img_every_iterations=200
+lr=0.001
 
-stage0=/home/hua/Desktop/dataset/egohand,/home/hua/Desktop/dataset/ae_hand,3
-data_argument0=Resize=320,RandomRotate=30,GaussianBlur=10,ToTensor
-stage1=/home/hua/Desktop/dataset/egohand,/home/hua/Desktop/dataset/ae_hand,2
-data_argument1=Resize=320,RandomRotate=50,RandomBlur=1.0,ToTensor
-stage2=/home/hua/Desktop/dataset/egohand,/home/hua/Desktop/dataset/ae_hand,1
-data_argument2=Resize=320,RandomRotate=100,ToTensor
+stage0=/home/hua/Desktop/dataset/egohand,/home/hua/Desktop/dataset/Render-handpose,500000
+data_argument0=Resize=320,RandomBlur=0.1,RandomResizedCrop,RandomGrayscale=0.7,RandomRotate=30,ToTensor
+
+stage1=/home/hua/Desktop/dataset/ae_hand,/home/hua/Desktop/dataset/depressed_01,500000
+data_argument1=RResize=320,RandomBlur=0.3,RandomResizedCrop,RandomGrayscale=0.7,RandomRotate=100,ToTensor
+
+

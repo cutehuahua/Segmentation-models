@@ -4,94 +4,98 @@ import torch
 import torch.utils.data as Data
 from torchvision.utils import save_image
 
-import models
-from utils import *
-
+from models.deeplab import deeplabv3p
+from utils import parser, dataloader
 import argparse
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--name", help="name for this training", type = str)
-parser.add_argument("--color", help="input color, default if RGB", type = str, default = "RGB")
-parser.add_argument("--pretrained", help="input checkpoint path", type = str, default = "none")
-
-parser.add_argument("--data_root", help="input path of main data root", type = str, default = "~/dataset/")
-
-
-parser.add_argument("--os", help="output stride, default is 16", type = int, default = 16 )
-parser.add_argument("--batch_size", help="batch size, default is 8", type = int, default = 8 )
-parser.add_argument("--subbatch", help="subbatch, default is 1", type = int, default = 1 )
-
-
-args = parser.parse_args()
+p = argparse.ArgumentParser()
+p.add_argument("--path", help="config file path", type = str)
+args = p.parse_args()
+args = parser.parse_config( args.path )
 print (args)
 
+batch_size = int(args.batch_size)
+subbatch = int(args.subbatch)
+num_of_stage = int(args.num_of_stage)
+save_img_every_iterations = int(args.save_img_every_iterations)
+save_each_iteration = int(args.save_each_iteration)
+device = torch.device("cuda:0" if args.gpu=="yes" else "cpu")
 
-batch_size = 8
-subbatch = 1 
+transforms, stage_iterations, datapaths = [], [], []
+for i in range(num_of_stage):
+    stage_data = getattr(args, "stage{}".format(i) ).split(',')
+    stage_argumentation = getattr(args, "data_argument{}".format(i) )
 
-save_each_epoch = 1
-max_epoch = 10
-start_epoch = 0
+    datapaths.append( stage_data[:-1] ) 
+    stage_iterations.append( int(stage_data[-1]) )
 
-model = models.deeplabv3p(num_class=1, input_channel=3, output_stride=16).cuda()
-m = args.name
+    transform = parser.get_transform(stage_argumentation)
+    transforms.append(transform)
 
-pretrain = True
+model = deeplabv3p(input_channel= 3 if args.color.lower() == "rgb" else 1, num_class = 1, output_stride= int(args.os)).to(device)
+pretrain = ( args.pretrained != None)
 if pretrain:
-    model.load_state_dict(torch.load("./saved_model/coco_voc_pretrained/deeplab_os16_100.tar"))
-
-transform_crop = Compose([
-    #ToGray(),
-    Resize((320, 320)),
-    #RandomBlur(p = 0.5),
-    #RandomResizedCrop(),
-    RandomGrayscale(),
-    RandomRotate(30),
-    ToTensor()
-])
-
+    model.load_state_dict(torch.load( args.pretrained ))
 
 print ("loading data...")
-dataset = dataloader.get_dataset(
-    "/home/hua/Desktop/dataset/ae_hand",
-    transform_crop,
-    train = True
-)
+train_loaders = []
+for i in range(num_of_stage):
+    tmp = dataloader.get_dataset(
+        datapaths[i],
+        transforms[i],
+        train = ( args.train.lower() == "yes" )
+    )
+    train_loaders.append( Data.DataLoader( tmp, batch_size = (batch_size//subbatch), shuffle = True, num_workers = 4) )
 
-train_loader = Data.DataLoader(dataset, batch_size = (batch_size//subbatch), shuffle = True, num_workers = 4)
+if len(stage_iterations) != len(train_loaders):
+    raise ValueError("wrong setting of stage iterations")
 print ("done!")
 
-model.cuda()
-
-optim = torch.optim.Adam(model.parameters(), 1e-4)
+model.to(device)
+optim = torch.optim.Adam(model.parameters(), args.lr)
 crit = nn.BCEWithLogitsLoss()
+model.train()
 
-for epoch in range(start_epoch, max_epoch + 1):
+iteration = 0
+stage = 0
+train_loader = train_loaders[stage]
+while True:
 
-    model.train()
     for ix, (img, mask) in enumerate(train_loader):
 
-        output = model(img.cuda())
-        loss = crit(output, mask.cuda())
+        output = model(img.to(device) )
+        loss = crit(output, mask.to(device))
         loss.backward()
 
         if ix % subbatch == 0:
             optim.step()
             optim.zero_grad()
+            iteration += 1
 
-        if ix % (10 * subbatch) == 0:
-            print ( "model:{}\tepoch:{:03d}\titeration:{:03d}\tloss:{}".format(m, epoch, (ix//subbatch), float(loss.data)) )
+        if iteration % 10 == 0:
+            print ( "model:{}\t\titeration:{:05d}\tloss:{}".format(args.name, iteration, float(loss.data)) )
 
-        if ix % (100 * subbatch) == 0:
+        if iteration % save_img_every_iterations == 0:
             zero = torch.zeros(mask.shape)
             one = torch.ones(mask.shape)
             front_mask = torch.sigmoid(output.cpu())
             output_mask = torch.where( front_mask > 0.5, one, zero)
 
-            save_image( torch.cat((output_mask, mask), dim=0).data, "./training_result/{}_{:03d}_{:03d}_mask.jpg".format(m, epoch, (ix//subbatch)), nrow = batch_size//subbatch )
-            save_image( img.data, "./training_result/{}_{:03d}_{:03d}_img.jpg".format(m, epoch, (ix//subbatch)), nrow = 20//subbatch )
+            save_image( torch.cat((output_mask, mask), dim=0).data, "./training_result/{}_{:05d}_mask.jpg".format(args.name, iteration, nrow = batch_size//subbatch ))
+            save_image( img.data, "./training_result/{}_{:05d}_img.jpg".format(args.name, iteration, nrow = 20//subbatch ))
 
-    if epoch % save_each_epoch == 0:
-        torch.save(  model.state_dict() , "./saved_model/{}_{}.tar".format( m, epoch))
+        if iteration % save_each_iteration == 0:
+            torch.save(  model.state_dict() , "./saved_model/{}_{:05d}.tar".format( args.name, iteration))
+
+        if iteration >= sum(stage_iterations):
+            break
+
+        if iteration >= sum(stage_iterations[:stage + 1]) :
+            stage += 1
+            train_loader = train_loaders[stage]
+            break
+
+    if iteration >= sum(stage_iterations):
+        break
 
 

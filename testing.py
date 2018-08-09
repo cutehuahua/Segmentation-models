@@ -18,17 +18,20 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", help="input checkpoint path", type = str)
 parser.add_argument("--mask", help="show mask or not, default is no", type = str, default = "no")
+parser.add_argument("--train", help="test on training set, default is no", type = str, default = "no")
+parser.add_argument("--os", help="output stride, default is 16", type = int, default = 16)
+
 args = parser.parse_args()
 
-model = deeplabv3p(input_channel=3, num_class=1, output_stride=16)
-m = "deeplab_os16"
+model = deeplabv3p(input_channel=3, num_class=1, output_stride=int(args.os))
+m = "deeplab_os{}".format(args.os)
 model.load_state_dict(torch.load( args.model ))
 model.cuda()
 model.eval()
 
 transform_crop = Compose([
     #ToGray(),
-    RandomGrayscale(p = 1),
+    RandomGrayscale(p = 1.0),
     Resize((320, 320)),
     ToTensor()
 ])
@@ -36,10 +39,10 @@ transform_crop = Compose([
 dataset = dataloader.get_dataset(
     "/home/hua/Desktop/dataset/ae_hand",
     transform_crop,
-    train = False
+    train = (args.train != "no")
 )
 
-test_loader = Data.DataLoader(dataset, batch_size = 1, shuffle = True, num_workers = 4)
+test_loader = Data.DataLoader(dataset, batch_size = 1, shuffle = True, num_workers = 1)
 mean_iou, count, mean_spent, showing = 0, 0, 0, 0
 
 s0, s1, s2 = 0, 0, 0

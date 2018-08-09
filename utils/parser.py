@@ -12,6 +12,7 @@ def parse_config(config_filepath):
     parser.add_argument("--lr", help="learning rate, defalut is 1e-4", type = float, default = 1e-4)
     parser.add_argument("--path", help="config file path", type = str)
 
+    parser.add_argument("--start_iteration", help="if you continue training from certain iteration, you should assign a start point", type = int, default = 0 )
     parser.add_argument("--save_img_every_iterations", help="how many iteration between save image", type = int, default = 200 )
     parser.add_argument("--save_each_iteration", help="save model each", type = int, default = 10000 )
     parser.add_argument("-os", help="output stride, default is 16", type = int, default = 16 )

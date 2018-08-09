@@ -75,12 +75,12 @@ class deeplabv3p(nn.Module):
         self.conv2 = nn.Conv2d(256, 48, 1)
         self.bn2 = nn.BatchNorm2d(48)
 
+
         self.last_conv = nn.Sequential(nn.Conv2d(304, 256, kernel_size=3, stride=1, padding=1),
                                        nn.BatchNorm2d(256),
                                        nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1),
-                                       nn.BatchNorm2d(256)
-                                       )
-        self.logit = nn.Conv2d(256, num_class, kernel_size=1, stride=1)
+                                       nn.BatchNorm2d(256),
+                                       nn.Conv2d(256, num_class, kernel_size=1, stride=1))
 
 
     def forward(self, x):
@@ -107,7 +107,7 @@ class deeplabv3p(nn.Module):
 
         x = torch.cat((x, low_level_features), dim=1)
         x = self.last_conv(x)
-        x = self.logit(x)
+
         x = F.interpolate(x, scale_factor= self.output_stride//(self.output_stride//4), mode='bilinear', align_corners=True)
 
         return x

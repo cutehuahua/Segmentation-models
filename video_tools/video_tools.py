@@ -66,6 +66,7 @@ parser.add_argument("--webcam", help="input webcam number, default is 0", type =
 parser.add_argument("--fps", help="default is 25", type = float, default = 25 )
 parser.add_argument("--os", help="output stride, default is 16", type = int, default = 16 )
 parser.add_argument("--empty_mask", help="whether you need empty mask or not, default is no", type = str, default = "no")
+parser.add_argument("--heat_map", help="show heat map of mask, default is no", type = str, default = "no")
 
 args = parser.parse_args()
 print (args)
@@ -151,6 +152,10 @@ while(True):
 
         cv_mask = cv2.cvtColor(np.array(mask), cv2.COLOR_GRAY2BGR)
         frame_recorder.write(cv_img, cv_mask)
+
+        if args.heat_map != "no":
+            heat_map = cv2.cvtColor(np.array(TF.to_pil_image(front_mask)), cv2.COLOR_GRAY2BGR)
+            cv2.imshow("heat", heat_map)
 
         cat = np.concatenate((cv_img, cv_mask), axis = 1)
         cv2.imshow("test", cat)

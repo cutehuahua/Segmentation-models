@@ -20,24 +20,27 @@ parser.add_argument("--model", help="input checkpoint path", type = str)
 parser.add_argument("--mask", help="show mask or not, default is no", type = str, default = "no")
 parser.add_argument("--train", help="test on training set, default is no", type = str, default = "no")
 parser.add_argument("--os", help="output stride, default is 16", type = int, default = 16)
+parser.add_argument("--layers", help="num of ResNet layers, 101 or 152, default is 101", type = int, default = 101)
+parser.add_argument("--gray", help="precentage of test data being grayscale, default is 1.0", type = float, default = 1.0)
+parser.add_argument("--data_root", help="data root for your testing data", type = str, required=True)
 
 args = parser.parse_args()
 
-model = deeplabv3p(input_channel=3, num_class=1, output_stride=int(args.os))
+model = deeplabv3p(input_channel=3, num_class=1, output_stride=int(args.os), layer=int(args.layers) )
 m = "deeplab_os{}".format(args.os)
 model.load_state_dict(torch.load( args.model ))
 model.cuda()
 model.eval()
 
 transform_crop = Compose([
-    #ToGray(),
-    RandomGrayscale(p = 1.0),
+    RandomGrayscale(p = float(args.gray) ),
     Resize((320, 320)),
     ToTensor()
 ])
 
 dataset = dataloader.get_dataset(
-    "/home/hua/Desktop/dataset/ae_hand",
+    args.data_root,
+    #"/home/hua/Desktop/dataset/ae_hand",
     transform_crop,
     train = (args.train != "no")
 )
@@ -70,9 +73,11 @@ with torch.no_grad():
 
         if args.mask != "no":
             show_mask = time.time()
+            pil_img = TF.to_pil_image(img.squeeze(0))
             pil_mask = TF.to_pil_image(output_mask.squeeze(0))
             cv_mask = cv2.cvtColor(np.array(pil_mask), cv2.COLOR_GRAY2BGR)
-            cv2.imshow("test", cv_mask)
+            cv_img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
+            cv2.imshow("test", np.concatenate((cv_img, cv_mask), axis=1))
             cv2.waitKey(1)
             showed = time.time()
 

@@ -32,7 +32,7 @@ for i in range(num_of_stage):
     transform = parser.get_transform(stage_argumentation)
     transforms.append(transform)
 
-model = deeplabv3p(input_channel= 3 if args.color.lower() == "rgb" else 1, num_class = 1, output_stride= int(args.os)).to(device)
+model = deeplabv3p(input_channel= 3 if args.color.lower() == "rgb" else 1, num_class = 1, output_stride= int(args.os), layer=int(args.layers) ).to(device)
 pretrain = ( args.pretrained != None)
 if pretrain:
     model.load_state_dict(torch.load( args.pretrained ))

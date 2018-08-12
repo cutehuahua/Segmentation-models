@@ -2,16 +2,21 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from .utils.resnet import resnet101
+from .utils.resnet import resnet101, resnet152
 
 
 class resnet_backbone(nn.Module):
-    def __init__(self, num_class = 1, input_channel = 3, output_stride=16):
+    def __init__(self, num_class = 1, input_channel = 3, output_stride=16, layer=101):
         super(resnet_backbone, self).__init__()
         if output_stride != 8 and output_stride != 16:
             raise ValueError("output stride can only be 8 or 16 for now")
+        if layer == 101:
+            self.resnet = resnet101(pretrained=True, output_stride=output_stride)
+        elif layer == 152:
+            self.resnet = resnet152(pretrained=True, output_stride=output_stride)
+        else:
+            raise ValueError("only support ResNet101 and ResNet152 now")
 
-        self.resnet = resnet101(pretrained=True, output_stride=output_stride)
         if input_channel == 1:
             self.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding = 3, bias=False)
         elif input_channel == 3:
@@ -49,9 +54,9 @@ class ASPP(nn.Module):
 
 #ResNet101 as backbone 
 class deeplabv3p(nn.Module):
-    def __init__(self, input_channel=3, num_class=21, output_stride=16 ):
+    def __init__(self, input_channel=3, num_class=21, output_stride=16, layer=101 ):
         super(deeplabv3p, self).__init__()
-        self.feature_extractor = resnet_backbone(num_class=num_class, input_channel=input_channel, output_stride=output_stride)
+        self.feature_extractor = resnet_backbone(num_class=num_class, input_channel=input_channel, output_stride=output_stride, layer=layer)
         self.output_stride = output_stride
 
         #ASPP
@@ -114,7 +119,7 @@ class deeplabv3p(nn.Module):
 
 
 if __name__ == "__main__":
-    model = DeepLabv3p(input_channel=3, num_class=1, output_stride=16).cuda()
+    model = deeplabv3p(input_channel=3, num_class=1, output_stride=16).cuda()
     image = torch.randn(10, 3, 320, 320 ).cuda()
     with torch.no_grad():
         output = model.forward(image)

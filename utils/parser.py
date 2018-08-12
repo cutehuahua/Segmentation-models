@@ -11,6 +11,7 @@ def parse_config(config_filepath):
     parser.add_argument("--train", help="default is yes", type = str, default = "yes")
     parser.add_argument("--lr", help="learning rate, defalut is 1e-4", type = float, default = 1e-4)
     parser.add_argument("--path", help="config file path", type = str)
+    parser.add_argument("--layers", help="num of ResNet layer, 101 or 152, default is 101", type = int, default = 101)
 
     parser.add_argument("--start_iteration", help="if you continue training from certain iteration, you should assign a start point", type = int, default = 0 )
     parser.add_argument("--save_img_every_iterations", help="how many iteration between save image", type = int, default = 200 )

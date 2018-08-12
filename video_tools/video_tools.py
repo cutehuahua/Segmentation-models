@@ -3,13 +3,9 @@ import numpy as np
 from PIL import Image
 import torchvision.transforms.functional as TF
 
-#change model here!
-from deeplab_os_8or16 import DeepLabv3_plus
+import sys
+from models.deeplab import deeplabv3p
 
-'''
-2018/08/07 TODO
-    change model by argparse
-'''
 
 class identitical(object):
     def __call__(self, thing):
@@ -67,6 +63,7 @@ parser.add_argument("--fps", help="default is 25", type = float, default = 25 )
 parser.add_argument("--os", help="output stride, default is 16", type = int, default = 16 )
 parser.add_argument("--empty_mask", help="whether you need empty mask or not, default is no", type = str, default = "no")
 parser.add_argument("--heat_map", help="show heat map of mask, default is no", type = str, default = "no")
+parser.add_argument("--gray", help="input graysacle image, default is no", type = str, default = "no")
 
 args = parser.parse_args()
 print (args)
@@ -84,7 +81,7 @@ else:
 
 #if there is a model check point input, then use this model
 if args.demo.lower() != "no":
-    model = DeepLabv3_plus(nInputChannels=3, n_classes=1, output_stride=args.os)
+    model = deeplabv3p(num_class=1, input_channel=3, output_stride=args.os)
     model.load_state_dict(torch.load( args.demo ))
     model.cuda()
 
@@ -136,6 +133,8 @@ while(True):
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         pil_frame = Image.fromarray(frame)
         pil_frame = TF.resize(pil_frame, (320, 320))
+        if args.gray != "no":
+            pil_frame = TF.to_grayscale(pil_frame, num_output_channels=3)
         img = TF.to_tensor(pil_frame).unsqueeze(0)
 
         t0 = time.time()

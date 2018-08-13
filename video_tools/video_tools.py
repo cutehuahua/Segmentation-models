@@ -64,6 +64,7 @@ parser.add_argument("--os", help="output stride, default is 16", type = int, def
 parser.add_argument("--empty_mask", help="whether you need empty mask or not, default is no", type = str, default = "no")
 parser.add_argument("--heat_map", help="show heat map of mask, default is no", type = str, default = "no")
 parser.add_argument("--gray", help="input graysacle image, default is no", type = str, default = "no")
+parser.add_argument("--layers", help="num of ResNet layers, 101 or 152, default is 101", type = int, default = 101)
 
 args = parser.parse_args()
 print (args)
@@ -81,7 +82,7 @@ else:
 
 #if there is a model check point input, then use this model
 if args.demo.lower() != "no":
-    model = deeplabv3p(num_class=1, input_channel=3, output_stride=args.os)
+    model = deeplabv3p(num_class=1, input_channel=3, output_stride=args.os, layer=int(args.layers))
     model.load_state_dict(torch.load( args.demo ))
     model.cuda()
 

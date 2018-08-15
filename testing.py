@@ -40,7 +40,6 @@ transform_crop = Compose([
 
 dataset = dataloader.get_dataset(
     args.data_root,
-    #"/home/hua/Desktop/dataset/ae_hand",
     transform_crop,
     train = (args.train != "no")
 )
@@ -51,8 +50,11 @@ mean_iou, count, mean_spent, showing = 0, 0, 0, 0
 s0, s1, s2 = 0, 0, 0
 t0 = time.time()
 for img, mask in test_loader:
-    mask_shape = mask.shape
-    break
+    try:
+        mask_shape = mask.shape
+        break
+    except:
+        raise ValueError("empty dataset")
 
 with torch.no_grad():
     zero = torch.zeros(mask_shape)

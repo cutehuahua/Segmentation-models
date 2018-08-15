@@ -5,7 +5,7 @@ import torchvision.transforms.functional as TF
 
 import sys
 from models.deeplab import deeplabv3p
-
+from vive_calibration import undistort
 
 class identitical(object):
     def __call__(self, thing):
@@ -65,6 +65,7 @@ parser.add_argument("--empty_mask", help="whether you need empty mask or not, de
 parser.add_argument("--heat_map", help="show heat map of mask, default is no", type = str, default = "no")
 parser.add_argument("--gray", help="input graysacle image, default is no", type = str, default = "no")
 parser.add_argument("--layers", help="num of ResNet layers, 101 or 152, default is 101", type = int, default = 101)
+parser.add_argument("--vive", help="whether your webcam is HTC vive, default is no", type = str, default = "no")
 
 args = parser.parse_args()
 print (args)
@@ -126,6 +127,8 @@ while(True):
         ret, frame = cap.read()
         if ret == False:
             break
+        if args.vive != "no":
+            frame = undistort(frame)
         cv_img = cv2.resize(frame, (320, 320))
     except:
         break
